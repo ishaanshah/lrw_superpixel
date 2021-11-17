@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import sparse
 import pyrtools as pt
 import math
 import cv2
@@ -46,20 +47,19 @@ def local_min(img, prhs):
 
 
 def get_weights(image, sigma):
-    """Generate a adjacency list with weights as described in the paper
+    """Generate a adjacency matrix with weights as described in the paper
 
     Args:
         image: The input image (LAB)
         sigma: Gaussian parameter
     Returns:
-        edges: The adjacency list
-        weights: The weights of the edges
+        adj: The adjacency matrix
     """
     height, width = image.shape[:2]
     size = height * width
     flat_image = image.reshape(size, -1).astype(dtype="float")
     flat_image[:, 0] = flat_image[:, 0] * 100 / 255
-    flat_image[:1:] -= 127
+    flat_image[:, 1:] -= 128
 
     # Get edges
     edges = np.concatenate(
@@ -88,6 +88,16 @@ def get_weights(image, sigma):
         weights[:] = 1
     weights = (weights - mn) / (mx - mn)
     # Perform gaussian
-    weights = np.exp(-sigma * weights)
+    weights = np.exp(-sigma * weights) + 1e-5
 
-    return edges, weights
+    adj = sparse.coo_matrix(
+        (
+            np.concatenate((weights, weights)),
+            (
+                np.concatenate((edges[:, 0], edges[:, 1])),
+                np.concatenate((edges[:, 1], edges[:, 0])),
+            ),
+        ),
+        shape=(size, size),
+    )
+    return adj
