@@ -74,7 +74,7 @@ def get_weights(image, sigma):
         [
             edge
             for edge in edges
-            if (edge[0] > 0 and edge[0] < size and edge[1] >= 0 and edge[1] < size)
+            if (edge[0] >= 0 and edge[0] < size and edge[1] >= 0 and edge[1] < size)
         ]
     )
     weights = np.sqrt(
@@ -90,7 +90,7 @@ def get_weights(image, sigma):
     # Perform gaussian
     weights = np.exp(-sigma * weights) + 1e-5
 
-    adj = sparse.coo_matrix(
+    adj = sparse.csr_matrix(
         (
             np.concatenate((weights, weights)),
             (
