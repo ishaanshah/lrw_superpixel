@@ -2,7 +2,6 @@ import numpy as np
 from scipy import sparse
 import pyrtools as pt
 import math
-import cv2
 
 
 def im2double(im):
@@ -58,14 +57,16 @@ def get_weights(image, sigma):
     height, width = image.shape[:2]
     size = height * width
     flat_image = image.reshape(size, -1).astype(dtype="float")
-    flat_image[:, 0] = flat_image[:, 0] * 100 / 255
-    flat_image[:, 1:] -= 128
 
     # Get edges
+    border1 = np.where((np.arange(size) % width) - 1)[0]
+    border2 = np.where(np.arange(size) % width)[0]
     edges = np.concatenate(
         (
             np.vstack((np.arange(size), np.arange(size) + 1)).T,
             np.vstack((np.arange(size), np.arange(size) + width)).T,
+            np.vstack((border1, border1 + width - 1)).T,
+            np.vstack((border2, border2 + width + 1)).T,
         )
     )
 
