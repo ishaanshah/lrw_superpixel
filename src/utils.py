@@ -2,6 +2,8 @@ import numpy as np
 from scipy import sparse
 import pyrtools as pt
 import math
+import matplotlib.pyplot as plt
+import networkx
 
 
 def im2double(im):
@@ -59,25 +61,21 @@ def get_weights(image, sigma):
     flat_image = image.reshape(size, -1).astype(dtype="float")
 
     # Get edges
-    border1 = np.where((np.arange(size) % width) - 1)[0]
-    border2 = np.where(np.arange(size) % width)[0]
-    edges = np.concatenate(
-        (
-            np.vstack((np.arange(size), np.arange(size) + 1)).T,
-            np.vstack((np.arange(size), np.arange(size) + width)).T,
-            np.vstack((border1, border1 + width - 1)).T,
-            np.vstack((border2, border2 + width + 1)).T,
-        )
-    )
+    graph = networkx.lattice.grid_2d_graph(height, width)
+    graph.add_edges_from([
+        ((x, y), (x+1, y+1))
+        for x in range(height-1)
+        for y in range(width-1)
+    ] + [
+        ((x+1, y), (x, y+1))
+        for x in range(height-1)
+        for y in range(width-1)
+    ])
+    edges = []
+    for edge in graph.edges:
+        edges.append([edge[0][0]*width+edge[0][1], edge[1][0]*width+edge[1][1]])
+    edges = np.array(edges)
 
-    # Filter invalid edges
-    edges = np.array(
-        [
-            edge
-            for edge in edges
-            if (edge[0] >= 0 and edge[0] < size and edge[1] >= 0 and edge[1] < size)
-        ]
-    )
     weights = np.sqrt(
         np.sum((flat_image[edges[:, 0]] - flat_image[edges[:, 1]]) ** 2, axis=1)
     )
@@ -91,7 +89,7 @@ def get_weights(image, sigma):
     # Perform gaussian
     weights = np.exp(-sigma * weights) + 1e-5
 
-    adj = sparse.csr_matrix(
+    adj = sparse.coo_matrix(
         (
             np.concatenate((weights, weights)),
             (
@@ -101,6 +99,7 @@ def get_weights(image, sigma):
         ),
         shape=(size, size),
     )
+
     return adj
 
 def seg2bmap(seg,width=None,height=None):
