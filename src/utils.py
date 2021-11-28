@@ -150,12 +150,12 @@ def seg2bmap(seg,width=None,height=None):
 	if w == width and h == height:
 		bmap = b
 	else:
-		bmap = np.zeros((height,width))
+		bmap = np.zeros((height,width,seg.shape[2]))
 		for x in range(w):
 			for y in range(h):
 				if b[y,x]:
 					j = 1+floor((y-1)+height / h)
 					i = 1+floor((x-1)+width  / h)
-					bmap[j,i] = 1;
+					bmap[j,i,:] = 1;
 
 	return bmap
