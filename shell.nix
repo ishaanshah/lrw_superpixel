@@ -30,6 +30,7 @@ in pkgs.mkShell {
     python39Packages.networkx
     python39Packages.numpy
     python39Packages.opencv4
+    python39Packages.pillow
     python39Packages.scikitimage
     python39Packages.scipy
     python39Packages.tqdm
