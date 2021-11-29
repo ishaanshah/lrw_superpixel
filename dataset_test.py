@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import os,math
 from tqdm import tqdm
 import numpy as np
-from demo import generate_seeds,energy_opt
-from utils import im2double,seg2bmap
+from src.temp import generate_seeds,energy_opt
+from src.utils import im2double,seg2bmap
 
 Nsp=200 #num of sp
 Thres=1.35 #threshold for split
@@ -13,8 +13,8 @@ beta=30 #gaussian parameter
 alpha=0.9992 #Lazy parameter
 nItrs_max = 10 #limit for the number of iterations
 
-dataset_path = "../images/BSDS300/images/train/"
-output_path = "../outputs/BSDS300/train/"
+dataset_path = "images/BSDS300/images/train/"
+output_path = "outputs/BSDS300/train/"
 
 for filename in tqdm(os.listdir(dataset_path)):
     path = os.path.join(dataset_path,filename)

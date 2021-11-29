@@ -2,3 +2,5 @@ lenaEnv/
 .ipynb_checkpoints
 __pycache__
 venv
+images/BSDS300/
+outputs/
