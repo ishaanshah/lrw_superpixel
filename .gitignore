@@ -3,3 +3,5 @@ lenaEnv/
 __pycache__
 venv
 BSDS300
+bsds500
+*.pkl
