@@ -91,16 +91,12 @@ def entrypoint():
     idx = np.nonzero(bmap > 0)
 
     bmap_on_img = smaller_image.copy()
-    temp = bmap_on_img[:, :, 0]
-    temp[idx] = 1
-    bmap_on_img[:, :, 0] = temp
-    if bmap_on_img.shape[2]:
-        temp = bmap_on_img[:, :, 1]
-        temp[idx] = 0
-        bmap_on_img[:, :, 1] = temp
-        temp = bmap_on_img[:, :, 2]
-        temp[idx] = 0
-        bmap_on_img[:, :, 2] = temp
+    if len(bmap_on_img.shape) == 3:
+        bmap_on_img[idx[0], idx[1], 0] = 255
+        bmap_on_img[idx[0], idx[1], 1] = 0
+        bmap_on_img[idx[0], idx[1], 2] = 0
+    else:
+        bmap_on_img[idx[0], idx[1]] = 0
 
     x, y = bmap_on_img.shape[:2]
     new_ratio = min(target_width / y,
