@@ -8,10 +8,19 @@ from skimage.feature import local_binary_pattern
 import pyrtools as pt
 from tqdm import tqdm
 
-from src.utils import im2double, gauss2D, local_min, get_weights, seg2bmap
+from src.utils import gauss2D, local_min, get_weights
 
 
 def get_speed_based_on_gradient(img, normSigma=5):
+    """Optimizes the initial seed positions according
+        to the gradient of the image
+    Args:
+        img: Size of the image
+        num_seeds: number of seeds
+        speed: The speed of movement
+    Returns:
+        seeds: Returns first phase seed positions
+    """
     [gx, gy] = np.gradient(255 * img)
     mag = np.sqrt(gx ** 2 + gy ** 2)
     filt = np.array([1])
@@ -43,6 +52,14 @@ def get_speed_based_on_gradient(img, normSigma=5):
 
 
 def get_seeds_orig(img, num_seeds, speed):
+    """Generates the seed initialization
+    Args:
+        img: Size of the image
+        num_seeds: number of seeds
+        speed: The speed of movement
+    Returns:
+        seeds: Returns first phase seed positions
+    """
     size_grid = np.sqrt(np.size(img) / num_seeds)
     rows = img.shape[0] / size_grid
     cols = img.shape[1] / size_grid
@@ -62,7 +79,6 @@ def get_seeds_orig(img, num_seeds, speed):
     maxShift = math.floor((minDistBetweenSeeds - 2 * seedRadius) / 2) - 1
     N = math.ceil(maxShift / 2)
     [dx, dy] = local_min(mag, N)
-    ind = np.hstack((x.astype("int")[0, :], y.astype("int")[:, 0]))
     x_row = list(x[0, :].astype("int") - 1)
     y_row = list(y[:, 0].astype("int") - 1)
     new_x = dx[np.ix_(x_row, y_row)].T
@@ -84,37 +100,19 @@ def get_seeds_orig(img, num_seeds, speed):
 
 
 def generate_seeds(Nsp, img):
+    """Generates the seed initialization
+    Args:
+        Nsp: Number of seed positions
+        img: Size of the image
+    Returns:
+        seeds: Initial seed positions
+    """
     n_init = np.round(Nsp / 4)
     expSuperPixelDist = np.sqrt(np.size(img) / n_init)
     normSigma = math.floor(expSuperPixelDist / 2.5)
     _, speed = get_speed_based_on_gradient(img, normSigma)
     seeds = get_seeds_orig(img, n_init, speed)
     return seeds
-
-
-# Nsp = 200  # num of sp
-# Thres = 1.35  # threshold for split
-# beta = 30  # gaussian parameter
-# alpha = 0.9992  # Lazy parameter
-# nItrs_max = 10  # limit for the number of iterations
-
-
-# img = cv2.cvtColor(cv2.imread("./images/290.jpg"), cv2.COLOR_BGR2RGB)
-# scale_percent = 40
-# width = math.ceil(img.shape[1] * scale_percent / 100)
-# height = math.ceil(img.shape[0] * scale_percent / 100)
-# dim = (width, height)
-
-# img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
-# gray_img = cv2.cvtColor(img.astype("uint8"), cv2.COLOR_RGB2GRAY)
-# orig_img = img.copy()
-# img = im2double(img)
-# X, Y, Z = img.shape
-# print(X, Y, Z)
-
-
-# seeds = generate_seeds(Nsp, im2double(gray_img / 255))
-# print(seeds[:5])
 
 
 def LRW(adj, seeds, labels, alpha, size):
@@ -302,24 +300,3 @@ def energy_opt(image, seeds, alpha, count, iters, sigma, thres):
     prob, labels_idx = LRW(adj, seeds_idx, labels, alpha, height * width)
     label_img = labels_idx.reshape((height, width))
     return label_img, new_seeds, iter_num
-
-
-# res, seeds, iters = energy_opt(orig_img, seeds, alpha, Nsp, nItrs_max, beta, Thres)
-# bmap = seg2bmap(res, Y, X)
-# idx = np.nonzero(bmap > 0)
-
-# bmapOnImg = img
-# temp = img[:, :, 0]
-# temp[idx] = 1
-# bmapOnImg[:, :, 0] = temp
-# if Z == 3:
-#     temp = img[:, :, 1]
-#     temp[idx] = 0
-#     bmapOnImg[:, :, 1] = temp
-#     temp = img[:, :, 2]
-#     temp[idx] = 0
-#     bmapOnImg[:, :, 2] = temp
-
-# plt.imshow(bmapOnImg)
-# seeds_x = [i[0] for i in seeds]
-# seeds_y = [i[1] for i in seeds]

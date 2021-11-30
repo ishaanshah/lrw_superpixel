@@ -3,13 +3,18 @@ import cv2
 import math
 import sys
 import numpy as np
+import time
 
 from PIL import Image, ImageTk
+from tkinter import filedialog
 
-from src.temp import generate_seeds, energy_opt
+from src.lrw import generate_seeds, energy_opt
 from src.utils import im2double, seg2bmap
 
-image_name = sys.argv[1]
+new_imgtk = None
+
+tk.Tk().withdraw()
+image_name = filedialog.askopenfilename()
 
 image = cv2.cvtColor(cv2.imread(image_name), cv2.COLOR_RGB2BGR)
 
@@ -20,7 +25,7 @@ smaller_image = cv2.resize(image, (lrw_target_width, lrw_target_height),
                            interpolation=cv2.INTER_AREA)
 
 # A root window for displaying objects
-root = tk.Tk()
+root = tk.Toplevel()
 root.title("Lazy Random Walk for Superpixel Segmentation")
 
 
@@ -86,14 +91,14 @@ def entrypoint():
     idx = np.nonzero(bmap > 0)
 
     bmap_on_img = smaller_image.copy()
-    temp = smaller_image[:, :, 0]
+    temp = bmap_on_img[:, :, 0]
     temp[idx] = 1
     bmap_on_img[:, :, 0] = temp
-    if smaller_image.shape[2]:
-        temp = smaller_image[:, :, 1]
+    if bmap_on_img.shape[2]:
+        temp = bmap_on_img[:, :, 1]
         temp[idx] = 0
         bmap_on_img[:, :, 1] = temp
-        temp = smaller_image[:, :, 2]
+        temp = bmap_on_img[:, :, 2]
         temp[idx] = 0
         bmap_on_img[:, :, 2] = temp
 
@@ -104,7 +109,9 @@ def entrypoint():
     new_image = new_image.resize((math.floor(y*new_ratio),
                                   math.floor(x*new_ratio)), Image.ANTIALIAS)
     new_image.save("result.png")
-    new_imgtk = ImageTk.PhotoImage(image=new_image)
+    global new_imgtk
+    new_imgtk = tk.PhotoImage(file="result.png")
+    global canvas
     global image_container
     canvas.itemconfig(image_container, image=new_imgtk)
 
