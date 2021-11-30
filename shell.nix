@@ -32,6 +32,12 @@ in pkgs.mkShell {
     python39Packages.opencv4
     python39Packages.pillow
     python39Packages.scikit-learn
+    python39Packages.ipython
+    python39Packages.jupyter
+    python39Packages.matplotlib
+    python39Packages.networkx
+    python39Packages.numpy
+    python39Packages.opencv4
     python39Packages.scikitimage
     python39Packages.scipy
     python39Packages.tqdm

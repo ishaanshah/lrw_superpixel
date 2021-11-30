@@ -2,6 +2,8 @@ import numpy as np
 from scipy import sparse
 import pyrtools as pt
 import math
+import matplotlib.pyplot as plt
+import networkx
 
 
 def im2double(im):
@@ -59,25 +61,21 @@ def get_weights(image, sigma):
     flat_image = image.reshape(size, -1).astype(dtype="float")
 
     # Get edges
-    border1 = np.where((np.arange(size) % width) - 1)[0]
-    border2 = np.where(np.arange(size) % width)[0]
-    edges = np.concatenate(
-        (
-            np.vstack((np.arange(size), np.arange(size) + 1)).T,
-            np.vstack((np.arange(size), np.arange(size) + width)).T,
-            np.vstack((border1, border1 + width - 1)).T,
-            np.vstack((border2, border2 + width + 1)).T,
-        )
-    )
+    graph = networkx.lattice.grid_2d_graph(height, width)
+    graph.add_edges_from([
+        ((x, y), (x+1, y+1))
+        for x in range(height-1)
+        for y in range(width-1)
+    ] + [
+        ((x+1, y), (x, y+1))
+        for x in range(height-1)
+        for y in range(width-1)
+    ])
+    edges = []
+    for edge in graph.edges:
+        edges.append([edge[0][0]*width+edge[0][1], edge[1][0]*width+edge[1][1]])
+    edges = np.array(edges)
 
-    # Filter invalid edges
-    edges = np.array(
-        [
-            edge
-            for edge in edges
-            if (edge[0] >= 0 and edge[0] < size and edge[1] >= 0 and edge[1] < size)
-        ]
-    )
     weights = np.sqrt(
         np.sum((flat_image[edges[:, 0]] - flat_image[edges[:, 1]]) ** 2, axis=1)
     )
@@ -91,7 +89,7 @@ def get_weights(image, sigma):
     # Perform gaussian
     weights = np.exp(-sigma * weights) + 1e-5
 
-    adj = sparse.csr_matrix(
+    adj = sparse.coo_matrix(
         (
             np.concatenate((weights, weights)),
             (
@@ -101,61 +99,57 @@ def get_weights(image, sigma):
         ),
         shape=(size, size),
     )
+
     return adj
 
 def seg2bmap(seg,width=None,height=None):
-	"""
-	From a segmentation, compute a binary boundary map with 1 pixel wide
-	boundaries.  The boundary pixels are offset by 1/2 pixel towards the
-	origin from the actual segment boundary.
-	Arguments:
-		seg     : Segments labeled from 1..k.
-		width	  :	Width of desired bmap  <= seg.shape[1]
-		height  :	Height of desired bmap <= seg.shape[0]
-	Returns:
-		bmap (ndarray):	Binary boundary map.
-	 David Martin <dmartin@eecs.berkeley.edu>
-	 January 2003
+    """
+    From a segmentation, compute a binary boundary map with 1 pixel wide
+    boundaries.  The boundary pixels are offset by 1/2 pixel towards the
+    origin from the actual segment boundary.
+    Arguments:
+        seg     : Segments labeled from 1..k.
+        width	  :	Width of desired bmap  <= seg.shape[1]
+        height  :	Height of desired bmap <= seg.shape[0]
+    Returns:
+        bmap (ndarray):	Binary boundary map.
+        David Martin <dmartin@eecs.berkeley.edu>
+        January 2003
  """
+#     seg = seg.astype(np.bool)
+#     seg[seg>0] = 1
+    assert np.atleast_3d(seg).shape[2] == 1
+    width  = seg.shape[1] if width  is None else width
+    height = seg.shape[0] if height is None else height
+    h,w = seg.shape[:2]
+    ar1 = float(width) / float(height)
+    ar2 = float(w) / float(h)
+    
+    assert not (width>w | height>h | abs(ar1-ar2)>0.01),\
+            'Can''t convert %dx%d seg to %dx%d bmap.'%(w,h,width,height)
 
-	seg = seg.astype(np.bool)
-	seg[seg>0] = 1
+    e  = np.zeros_like(seg)
+    s  = np.zeros_like(seg)
+    se = np.zeros_like(seg)
 
-	assert np.atleast_3d(seg).shape[2] == 1
+    e[:,:-1]    = seg[:,1:]
+    s[:-1,:]    = seg[1:,:]
+    se[:-1,:-1] = seg[1:,1:]
 
-	width  = seg.shape[1] if width  is None else width
-	height = seg.shape[0] if height is None else height
+    b        = seg^e | seg^s | seg^se
+    b[-1,:]  = seg[-1,:]^e[-1,:]
+    b[:,-1]  = seg[:,-1]^s[:,-1]
+    b[-1,-1] = 0
 
-	h,w = seg.shape[:2]
+    if w == width and h == height:
+        bmap = b
+    else:
+        bmap = np.zeros((height,width))
+        for x in range(w):
+            for y in range(h):
+                if b[y,x]:
+                    j = 1+floor((y-1)+height / h)
+                    i = 1+floor((x-1)+width  / h)
+                    bmap[j,i] = 1;
 
-	ar1 = float(width) / float(height)
-	ar2 = float(w) / float(h)
-
-	assert not (width>w | height>h | abs(ar1-ar2)>0.01),\
-			'Can''t convert %dx%d seg to %dx%d bmap.'%(w,h,width,height)
-
-	e  = np.zeros_like(seg)
-	s  = np.zeros_like(seg)
-	se = np.zeros_like(seg)
-
-	e[:,:-1]    = seg[:,1:]
-	s[:-1,:]    = seg[1:,:]
-	se[:-1,:-1] = seg[1:,1:]
-
-	b        = seg^e | seg^s | seg^se
-	b[-1,:]  = seg[-1,:]^e[-1,:]
-	b[:,-1]  = seg[:,-1]^s[:,-1]
-	b[-1,-1] = 0
-
-	if w == width and h == height:
-		bmap = b
-	else:
-		bmap = np.zeros((height,width))
-		for x in range(w):
-			for y in range(h):
-				if b[y,x]:
-					j = 1+floor((y-1)+height / h)
-					i = 1+floor((x-1)+width  / h)
-					bmap[j,i] = 1;
-
-	return bmap
+    return bmap
