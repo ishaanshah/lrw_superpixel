@@ -8,7 +8,7 @@ import time
 from PIL import Image, ImageTk
 from tkinter import filedialog
 
-from src.temp import generate_seeds, energy_opt
+from src.lrw import generate_seeds, energy_opt
 from src.utils import im2double, seg2bmap
 
 new_imgtk = None
