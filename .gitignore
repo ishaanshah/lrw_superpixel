@@ -7,3 +7,4 @@ bsds500
 *.pkl
 images/BSDS300
 outputs/
+result.png
