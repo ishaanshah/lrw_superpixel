@@ -1,14 +1,15 @@
 import numpy as np
 from scipy import sparse
-import pyrtools as pt
-import math
-import matplotlib.pyplot as plt
 import networkx
 
 
 def im2double(im):
-    #     info = np.iinfo(im.dtype) # Get the data type of the input image
-    #     return im.astype(np.float) / info.max # Divide all values by the largest possible value in the datatype
+    """Subtracts min and then normalizes the array.
+    Args:
+        im: initial array
+    Returns:
+        out: normalized array
+    """
     min_val = np.min(im)
     max_val = np.max(im)
     out = (im.astype("float") - min_val) / (max_val - min_val)
@@ -16,9 +17,16 @@ def im2double(im):
 
 
 def gauss2D(shape, sigma):
+    """Returns a 2 dimensional gaussian.
+    Args:
+        shape: dimensions of the 2d gaussian
+        sigma: variance of gaussian distribution
+    Returns:
+        h: 2d gaussian
+    """
     m, n = [(ss - 1.0) / 2.0 for ss in shape]
     y, x = np.ogrid[-m : m + 1, -n : n + 1]
-    h = np.exp(-(x * x + y * y) / (2.0 * sigma * sigma))
+    h = np.exp(-(x ** 2 + y ** 2) / (2.0 * sigma ** 2))
     h[h < np.finfo(h.dtype).eps * h.max()] = 0
     sumh = h.sum()
     if sumh != 0:
@@ -27,6 +35,15 @@ def gauss2D(shape, sigma):
 
 
 def local_min(img, prhs):
+    """Gives direction of local minimum.
+
+    Args:
+        img: image
+        prhs:
+    Returns:
+        plhs[0]:
+        plhs[1]:
+    """
     iWidth, iHeight = img.shape
     plhs = [0, 0]
     im = img.flatten()
@@ -36,7 +53,7 @@ def local_min(img, prhs):
 
     for j in range(N, iHeight - N):
         for i in range(N, iWidth - N):
-            dMinValue = np.float("Inf")
+            dMinValue = np.inf
             for k in range(-N, N + 1):
                 for l in range(-N, N + 1):
                     iIndex = (j + k) * iWidth + i + l
@@ -62,18 +79,17 @@ def get_weights(image, sigma):
 
     # Get edges
     graph = networkx.lattice.grid_2d_graph(height, width)
-    graph.add_edges_from([
-        ((x, y), (x+1, y+1))
-        for x in range(height-1)
-        for y in range(width-1)
-    ] + [
-        ((x+1, y), (x, y+1))
-        for x in range(height-1)
-        for y in range(width-1)
-    ])
+    graph.add_edges_from(
+        [((x, y), (x + 1, y + 1)) for x in range(height - 1) for y in range(width - 1)]
+        + [
+            ((x + 1, y), (x, y + 1))
+            for x in range(height - 1)
+            for y in range(width - 1)
+        ]
+    )
     edges = []
     for edge in graph.edges:
-        edges.append([edge[0][0]*width+edge[0][1], edge[1][0]*width+edge[1][1]])
+        edges.append([edge[0][0] * width + edge[0][1], edge[1][0] * width + edge[1][1]])
     edges = np.array(edges)
 
     weights = np.sqrt(
@@ -102,7 +118,8 @@ def get_weights(image, sigma):
 
     return adj
 
-def seg2bmap(seg,width=None,height=None):
+
+def seg2bmap(seg, width=None, height=None):
     """
     From a segmentation, compute a binary boundary map with 1 pixel wide
     boundaries.  The boundary pixels are offset by 1/2 pixel towards the
@@ -115,41 +132,42 @@ def seg2bmap(seg,width=None,height=None):
         bmap (ndarray):	Binary boundary map.
         David Martin <dmartin@eecs.berkeley.edu>
         January 2003
- """
-#     seg = seg.astype(np.bool)
-#     seg[seg>0] = 1
+    """
+    #     seg = seg.astype(np.bool)
+    #     seg[seg>0] = 1
     assert np.atleast_3d(seg).shape[2] == 1
-    width  = seg.shape[1] if width  is None else width
+    width = seg.shape[1] if width is None else width
     height = seg.shape[0] if height is None else height
-    h,w = seg.shape[:2]
+    h, w = seg.shape[:2]
     ar1 = float(width) / float(height)
     ar2 = float(w) / float(h)
-    
-    assert not (width>w | height>h | abs(ar1-ar2)>0.01),\
-            'Can''t convert %dx%d seg to %dx%d bmap.'%(w,h,width,height)
 
-    e  = np.zeros_like(seg)
-    s  = np.zeros_like(seg)
+    assert not (
+        width > w | height > h | abs(ar1 - ar2) > 0.01
+    ), "Can" "t convert %dx%d seg to %dx%d bmap." % (w, h, width, height)
+
+    e = np.zeros_like(seg)
+    s = np.zeros_like(seg)
     se = np.zeros_like(seg)
 
-    e[:,:-1]    = seg[:,1:]
-    s[:-1,:]    = seg[1:,:]
-    se[:-1,:-1] = seg[1:,1:]
+    e[:, :-1] = seg[:, 1:]
+    s[:-1, :] = seg[1:, :]
+    se[:-1, :-1] = seg[1:, 1:]
 
-    b        = seg^e | seg^s | seg^se
-    b[-1,:]  = seg[-1,:]^e[-1,:]
-    b[:,-1]  = seg[:,-1]^s[:,-1]
-    b[-1,-1] = 0
+    b = seg ^ e | seg ^ s | seg ^ se
+    b[-1, :] = seg[-1, :] ^ e[-1, :]
+    b[:, -1] = seg[:, -1] ^ s[:, -1]
+    b[-1, -1] = 0
 
     if w == width and h == height:
         bmap = b
     else:
-        bmap = np.zeros((height,width))
+        bmap = np.zeros((height, width))
         for x in range(w):
             for y in range(h):
-                if b[y,x]:
-                    j = 1+floor((y-1)+height / h)
-                    i = 1+floor((x-1)+width  / h)
-                    bmap[j,i] = 1;
+                if b[y, x]:
+                    j = 1 + floor((y - 1) + height / h)
+                    i = 1 + floor((x - 1) + width / h)
+                    bmap[j, i] = 1
 
     return bmap
