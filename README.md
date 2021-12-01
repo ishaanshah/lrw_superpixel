@@ -30,7 +30,7 @@ This repository contains a python implementation of the paper [Lazy Random Walks
 
 - **Beta**: Beta is the Gaussian parameter. It dictates how much the intensity difference between neighbouring pixels affects the result.
 
-- **Lazy Parameter**: Lazy parameter is the probability with which the random walk algorithm leaves the node it currently is on. That is it stays on the same node with probability ![equation](https://latex.codecogs.com/gif.latex?1-\alpha) where ![equation](https://latex.codecogs.com/gif.latex?\alpha) is the lazy parameter.
+- **Lazy Parameter**: Lazy parameter is the probability with which the random walk algorithm leaves the node it currently is on. That is it stays on the same node with probability ![equation](https://latex.codecogs.com/svg.latex?1-\alpha) where ![equation](https://latex.codecogs.com/svg.latex?\alpha) is the lazy parameter.
 
 - **Threshold**: Threshold is the value of area after which a split in a superpixel will happen. The area function used in the paper is the [Local Binary Pattern](https://en.wikipedia.org/wiki/Local_binary_patterns) function which effectively measures the texture content of a region.
 
