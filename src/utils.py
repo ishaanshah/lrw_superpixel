@@ -130,11 +130,7 @@ def seg2bmap(seg, width=None, height=None):
         height  :	Height of desired bmap <= seg.shape[0]
     Returns:
         bmap (ndarray):	Binary boundary map.
-        David Martin <dmartin@eecs.berkeley.edu>
-        January 2003
     """
-    #     seg = seg.astype(np.bool)
-    #     seg[seg>0] = 1
     assert np.atleast_3d(seg).shape[2] == 1
     width = seg.shape[1] if width is None else width
     height = seg.shape[0] if height is None else height
