@@ -160,7 +160,7 @@ def LRW(adj, seeds, labels, alpha, size):
     return prob, labels_idx
 
 
-def energy_opt(image, seeds, alpha, count, iters, sigma, thres):
+def energy_opt(image, seeds, alpha, count, iters, sigma, thres, disable_tqdm=False):
     """Find and optimize the superpixel results
     Args:
         image: Original Image (RGB / Grayscale)
@@ -175,7 +175,8 @@ def energy_opt(image, seeds, alpha, count, iters, sigma, thres):
         seeds: The optimized seed positions
         iters: The number of iterations taken for convergence
     """
-    pbar = tqdm(total=iters)
+    if not disable_tqdm:
+        pbar = tqdm(total=iters, disable=disable_tqdm)
     height, width = image.shape[:2]
 
     lab = rgb2lab(image, illuminant="D65")
@@ -294,7 +295,8 @@ def energy_opt(image, seeds, alpha, count, iters, sigma, thres):
         centers_new = np.array(centers_new)
         new_seeds = np.round(centers_new)
         iter_num += 1
-        pbar.update(1)
+        if not disable_tqdm:
+            pbar.update(1)
     seeds_idx = new_seeds[:, 0] * width + new_seeds[:, 1]
     labels = np.arange(len(new_seeds))
     prob, labels_idx = LRW(adj, seeds_idx, labels, alpha, height * width)
