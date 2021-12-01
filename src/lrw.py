@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import cv2
 import math
 from scipy import ndimage, sparse
@@ -155,7 +154,6 @@ def LRW(adj, seeds, labels, alpha, size):
         sparse.coo_matrix((sum_like, (np.arange(size), np.arange(size)))) @ likelihoods
     )
     labels_idx = probs.argmax(axis=1)
-    plt.show()
     prob = probs.max(1)
     return prob, labels_idx
 
@@ -176,7 +174,7 @@ def energy_opt(image, seeds, alpha, count, iters, sigma, thres, disable_tqdm=Fal
         iters: The number of iterations taken for convergence
     """
     if not disable_tqdm:
-        pbar = tqdm(total=iters, disable=disable_tqdm)
+        pbar = tqdm(total=iters)
     height, width = image.shape[:2]
 
     lab = rgb2lab(image, illuminant="D65")
